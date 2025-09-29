@@ -110,14 +110,15 @@ form.addEventListener("submit", async (e) => {
 
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) {
-        progressBar.value = (e.loaded / e.total) * 100;
-        document.getElementById("progressBar").value = percent;  // ✅ 改 .value
+        const percent = (e.loaded / e.total) * 100;
+        progressBar.value = percent;
       }
     };
 
     xhr.onload = () => {
       if (xhr.status === 200) {
         statusDiv.textContent = "✅ 上傳完成！";
+        loadVideos();  // ⬅️ 上傳完成後刷新影片清單
       } else {
         statusDiv.textContent = `❌ 上傳失敗：${xhr.statusText}`;
       }
@@ -144,22 +145,110 @@ async function loadVideos() {
     return;
   }
 
-  const res = await fetch(`${API_BASE}/list-videos`, {
-    method: "GET",
-    headers: { "Authorization": "Bearer " + token }
-  });
+  try {
+    const res = await fetch(`${API_BASE}/list-videos`, {
+      method: "GET",
+      headers: { "Authorization": "Bearer " + token }
+    });
 
-  const data = await res.json();
-  console.log("🎬 影片清單:", data);
+    const data = await res.json();
 
-  const listDiv = document.getElementById("videoList");
-  listDiv.innerHTML = "";
-  data.forEach(item => {
-    const a = document.createElement("a");
-    a.href = item.url;
-    a.textContent = item.key.split("/").pop();
-    a.target = "_blank";
-    listDiv.appendChild(a);
-    listDiv.appendChild(document.createElement("br"));
-  });
+    if (!res.ok) {
+      console.error("❌ list-videos 錯誤:", data);
+      return;
+    }
+
+    const videoListDiv = document.getElementById("videoList");
+    videoListDiv.innerHTML = ""; // 清空舊內容
+    data.forEach(item => {
+      // 外層卡片
+      const card = document.createElement("div");
+      card.className = "video-card";
+
+      // 縮圖
+      if (item.cover_url) {
+        const img = document.createElement("img");
+        img.src = item.cover_url;
+        img.alt = item.decodedName;
+        card.appendChild(img);
+      } else {
+        const placeholder = document.createElement("div");
+        placeholder.className = "placeholder";
+        placeholder.textContent = "🎬 無縮圖";
+        card.appendChild(placeholder);
+      }
+
+      // 檔名連結
+      const link = document.createElement("a");
+      link.href = item.video_url;
+      link.target = "_blank";
+      link.textContent = item.decodedName;
+      card.appendChild(link);
+
+      // 檔案大小
+      const sizeInfo = document.createElement("div");
+      sizeInfo.className = "size";
+      sizeInfo.textContent = `${(item.size / 1024 / 1024).toFixed(2)} MB`;
+      card.appendChild(sizeInfo);
+
+      // ❌ 刪除按鈕
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "刪除";
+      delBtn.style.marginTop = "8px";
+      delBtn.onclick = async () => {
+        if (!confirm(`確定刪除 ${item.decodedName}？`)) return;
+
+        const token = localStorage.getItem("jwt");
+        try {
+          const res = await fetch(`${API_BASE}/delete-video`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({ key: item.key })
+          });
+          const result = await res.json();
+
+          if (res.ok) {
+            alert("✅ 已刪除");
+            loadVideos(); // ⬅️ 刪除後刷新清單
+          } else {
+            alert("❌ 刪除失敗：" + (result.error || "未知錯誤"));
+          }
+        } catch (err) {
+          console.error("刪除失敗:", err);
+        }
+      };
+      card.appendChild(delBtn);
+
+      videoListDiv.appendChild(card);
+    });
+  } catch (err) {
+    console.error("❌ 載入影片失敗:", err);
+  }
 }
+
+// 縮圖
+const thumbWrapper = document.createElement("div");
+thumbWrapper.className = "thumb-wrapper";
+
+if (item.cover_url) {
+  const img = document.createElement("img");
+  img.src = item.cover_url;
+  img.alt = item.decodedName;
+  thumbWrapper.appendChild(img);
+} else {
+  const placeholder = document.createElement("div");
+  placeholder.className = "placeholder";
+  placeholder.textContent = "🎬 無縮圖";
+  thumbWrapper.appendChild(placeholder);
+}
+
+// ▶️ 播放 Icon
+const playIcon = document.createElement("div");
+playIcon.className = "play-icon";
+playIcon.textContent = "▶️";
+thumbWrapper.appendChild(playIcon);
+
+card.appendChild(thumbWrapper);

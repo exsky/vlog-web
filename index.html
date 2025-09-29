@@ -2,23 +2,18 @@
 <html lang="zh-TW">
 <head>
   <meta charset="utf-8">
-  <title>影片上傳</title>
+  <title>影片清單</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
-  <!-- 🔹 頂部橫幅 -->
-  <header class="navbar">
-    <h1 class="logo">Vlog 平台</h1>
-    <div class="nav-actions">
-      <span id="welcomeUser"></span>
-      <button id="logoutBtn" style="display:none;">登出</button>
-    </div>
-  </header>
+  <div class="navbar">
+    <h2>影片管理</h2>
+    <span id="welcomeUser"></span>
+    <button id="logoutBtn" style="display:none;">登出</button>
+  </div>
 
   <div class="container">
-    <h2>影片上傳</h2>
-
+    <h3>影片上傳</h3>
     <div id="uploadSection" style="display:none;">
       <form id="uploadForm">
         <input type="file" id="fileInput" accept="video/*"><br>
@@ -27,12 +22,9 @@
         <div id="status" class="status"></div>
       </form>
     </div>
+    <h3>我的影片清單 <button onclick="loadVideos()">🔄 重新整理</button></h3>
+    <div id="videoList"></div>
   </div>
-
-  <h3>我的影片清單</h3>
-  <div id="videoList"></div>
-  <button onclick="loadVideos()">🔄 重新整理</button>
-
   <script src="script.js"></script>
 </body>
 </html>
